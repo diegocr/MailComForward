@@ -1,0 +1,743 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: APL License
+ * 
+ * Copyright (c) 2003 Diego Casorran <dcasorran@gmail.com>
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * ***** END LICENSE BLOCK ***** */
+
+/**/
+
+signal on halt
+signal on break_c
+
+    l="rmh.library";if ~show("L",l) then;if ~AddLib(l,0,-30) then exit 15
+    if AddLibrary("rxmui.library","rxlibnet.library")~=0 then do;call easyrequest("Cant open "result);exit;end
+    app.title="Mail.comForward"
+    app.base="Mail.comForward"
+    		heads.ObjectID=10;adl.ObjectID=11;ToFW.ObjectID=12;ToYAM.ObjectID=13;ToNIX.ObjectID=14
+	app.menustrip=MakeObj(,"Menustrip",,
+        MakeObj(,"Menu","Project",,
+	    MenuItem("quo","Check quota","C"),,
+	    MenuItem("cin","Check Inbox","I"),,
+	    MenuItem("met","Empty Trash","E"),,
+	    MenuItem("mlo","Check Log","S"),,
+            Menuitem("","BAR"),,
+            Menuitem("mabout","About...","?"),,
+            Menuitem("maboutrxmui","About RxMUI..."),,
+            Menuitem("maboutmui","About MUI..."),,
+            Menuitem("","BAR"),,
+            Menuitem("mhide","Hide","H"),,
+            Menuitem("mquit","Quit","Q")),,
+        MakeObj("medit","Menu","Settings",,
+	    Menuitem("heads","Headers",,"CHECKED CheckIt Toggle"),,
+	    Menuitem("adl","AutoDL",,"CheckIt Toggle"),,
+	    Menuitem("","BAR"),,
+	    MakeObj(,"MenuItem",menuitem(,"Action"),,
+	    	Menuitem("ToFW","Forward",,"CHECKED CheckIt Toggle",6),,
+	    	Menuitem("ToYAM","Export to YAM",,"CheckIt Toggle",5),,
+	    	Menuitem("ToNIX","Export to uNIX-like file",,"CheckIt Toggle",3)),,
+	    Menuitem("","BAR"),,
+	    MenuItem("mcfg","Prefs","P"),,
+            Menuitem("mmui","MUI...","M")))
+    app.SubWindow="mwin"
+     mwin.ID="MAIN"
+     mwin.title="MFWD v1.0 ©2002-2003 Diego CR"
+     mwin.contents="mgroup";mgroup.background=shadow
+      logo.Class="Picture"
+      logo.Source=GetLogo()
+      logo.SourceType="mem"
+      logo.InputMode="RelVerify"
+        go.Class="Picture"
+        go.Source=GetGo()
+        go.SourceType="mem"
+        go.InputMode="RelVerify"
+info.frame=virtual
+	call child "mgroup","info","text"
+
+lm.max=100
+call child "mgroup",MakeObj("g0","HGroup",HSpace(0),,
+	MakeObj("lm","Levelmeter",,,,,"Quota"),HSpace(0),,
+	MakeObj(,"HCenter","logo"),HSpace(0),,
+	MakeObj("lm2","Levelmeter",,,,,"Received"),HSpace(0))
+
+usr.ShortHelp="Full E-mail address";pwd.ShortHelp="Password"
+usr.ObjectID=1;pwd.ObjectID=2;pwd.Secret=1
+
+	call child "mgroup","po","popobject"
+       po.Object="pg"
+        pg.Class="group"
+        pg.Frame="Inputlist"
+         pg.0="Lv"
+          lv.Class="Listview"
+          lv.list="l"
+		add.FixWidth=1;remove.FixWidth=1;lvbut.Spacing=0
+	 if open(bm,'env:Mail.comFWD.accs','R') then do;y=0;do until eof(bm);ln=readln(bm);if ln~="" then l.y=ln;y=y+1;end;call close(bm);end
+	 pg.1=MakeObj("lvbut",'HGroup',string("email"),Button("add","_A"),Button("remove","_R"))
+       po.String=MakeObj(,'HGroup',string("usr"))
+       po.Button=MakeObj("","Imagebutton","popup")
+       po.Toggle=1
+       po.CloseFun="call DoMethod('l','GetEntry','active','A');call set('usr','contents',a)"
+
+	call child "mgroup",MakeObj(,"HGroup",string("pwd"),"go")
+
+    if NewObj("application","app")>0 then exit 666
+
+    cwin.ID="CWIN"
+    cwin.width=210
+    cwin.Contents="cgroup"
+	call child "cgroup","g2","group"
+		g2.frame=group
+		g2.frametitle="Forward E-mail address";fa.ObjectID=3
+		g2.0=string("fa")
+	call child "cgroup","g3","group"
+		g3.frame=group
+		g3.frametitle="SMTP Server";serv.ObjectID=4
+		g3.0=string("serv")
+	call child "cgroup","g4","group"
+		g4.frame=group
+		g4.frametitle="output UNIX file";nixfile.ObjectID=6
+		g4.0=string("nixfile",,"s:!mfwd.nix")
+	call child "cgroup","popf","popasl"
+	popf.frame=group
+	popf.frametitle="Attacheds directory"
+       popf.DomultiSelect=0;attdst.ObjectID=22
+       popf.String=string("attdst")
+       popf.DrawersOnly=1
+       popf.InitialPattern="#?"
+       popf.Title="Destination directory..."
+	call child "cgroup","g5","group"
+		g5.frame=group
+		g5.Horiz=1
+		g5.0=Label("Max. msgs to download: ");mbs.ObjectID=5
+		g5.1=MakeObj("mbs","NumericButton","",1,999)
+
+    res=NewObj("window","cwin")
+    if res~=0 then do
+        call EasyRequest("Can't create config window !")
+        exit
+    end
+    call Add("app","cwin")
+
+
+    call notify("mwin","CloseRequest",1,"app","ReturnID","QUIT")
+    call notify("cwin","CloseRequest",1,"app","Return","save")
+    call Notify("go","Pressed",0,"app","return","launch")
+    call Notify("logo","Pressed",0,"app","return","about")
+    call Notify("usr","Acknowledge","Everytime","mwin","set","activeObject","pwd")
+    call Notify("pwd","Acknowledge","Everytime","mwin","set","activeObject","go")
+    call Notify("mabout","menutrigger","everytime","app","return","about")
+    call Notify("met","menutrigger","everytime","app","return","emptytrash")
+    call Notify("mlo","menutrigger","everytime","app","return","seelog")
+    call Notify("quo","menutrigger","everytime","app","return","quota")
+    call Notify("cin","menutrigger","everytime","app","return","lcin")
+    call Notify("mcfg","menutrigger","everytime","cwin","set","open",1)
+    call Notify("maboutrxmui","menutrigger","everytime","_app","aboutrxmui","win")
+    call Notify("maboutmui","menutrigger","everytime","_app","aboutmui","win")
+    call Notify("mhide","menutrigger","everytime","_app","set","iconified",1)
+    call Notify("mquit","menutrigger","everytime","_app","returnid","quit")
+    call notify("mmui","MenuTrigger","Everytime","app","OpenConfigWindow")
+    call Notify("lv","DoubleClick","EveryTime","po","Close",1)
+
+call Notify("add","Pressed",0,"l","Insert","","Bottom")
+call Notify("add","Pressed",0,"l","Set","Active","Bottom")
+call Notify("Remove","Pressed",0,"l","Remove","Active")
+
+call Notify("l","Active",-1,"email","Set","Contents","")
+
+call Notify("l","ActiveEntry0","Everytime","email","Set","Contents","TriggerValue")
+call Notify("email","NewContents","Everytime","l","ReplaceCol","Active",0,"TriggerValue")
+
+call DoMethod("app","load","env")
+if xget("attdst","contents")=="" then call set("attdst","contents",realname('')||"/")
+
+    call set("mwin","open",1)
+    if xget("mbs","value")=1 then call set("cwin","open",1)
+
+    do forever
+        call NewHandle("APP","H",2**12)
+        if and(h.signals,2**12)>0 then exit
+        select
+            when h.event="save" then do
+            call DoMethod("app","save","envarc")
+            call DoMethod("app","save","env")
+	    call set("cwin","open",0);end
+            when h.event="QUIT" then DO
+            call nfo("Saving address book...")
+            call DoMethod("app","save","envarc")
+            call DoMethod("app","save","env")
+	    call DoMethod("l","Getentries","c")
+	    call open(bm,'env:Mail.comFWD.accs',"W")
+	    DO y=0 TO c.num-1;call writeln(bm,c.y);END;call close(bm)
+	    call system("copy env:Mail.comFWD.accs envarc:Mail.comFWD.accs");EXIT;end
+            when h.event="launch" then call launch()
+            when h.event="lcin" then call launch(1)
+            when h.event="quota" then call cquota()
+            when h.event="seelog" then call system("Run >NIL: MultiView s:!mfwd.log")
+            when h.event="emptytrash" then if muirequest("app","","Mail.comForward","Yes|No",parsetext("%c%b\n- confirm operation -\n\nARE YOU SURE YOU WANT ERASE THE ENTIRE Trash FOLDER ???\n\n"))=1 then call emptyt()
+            when h.event="about" then call muirequest("app","","Mail.comForward","oK",parsetext("%c%b\n
+Mail.comForward v1.0 (01.02.2003)\n\n
+Copyright 2k2 by Diego CR\n\n\n
+For comments/suggestions/bugreports:\n\n
+<dcr8520@mail.com>\n"))
+            otherwise nop
+        end
+    end
+
+nfo:
+	call set("info","contents",parsetext("%b%c%3"arg(1)))
+RETURN
+
+err:
+call EasyRequest(arg(1))
+call nfo("")
+call close(1);call close(2);call close(3);call close(snd);call close(nm)
+RETURN
+
+
+launch:
+login=xget("usr","contents");pass=xget("pwd","contents")
+faddr=xget("fa","contents");smtp=xget("serv","contents")
+unixf=xget("nixfile","contents")
+
+if faddr="" | smtp="" then do
+call set("cwin","open",1)
+call err("required data missing...");return;end
+
+if login="" | pass="" then do;call err("must insert a valid mail.com address and password!");return;end
+
+cinbox=arg(1)
+call GetAttr("ToFW","Checked","ToFW")
+call GetAttr("ToYAM","Checked","ToYAM")
+call GetAttr("ToNIX","Checked","ToNIX")
+if ToYAM==1 & ~show('p','YAM') then do;call err('YAM is not RUNNING!');return;end
+if ToNIX==1 & unixf=="" then do;call err('please select the UNIX file to export');return;end
+
+if singin()>0 then return;i=0;lm2v=0;xpr=0;af1=0;af2=0;af3=0;filez="";ctime=time('s');cvbn=0
+call GetAttr("heads","Checked","UsarHeads")
+call GetAttr("adl","Checked","UsarReq")
+MaxToDown=xget("mbs","value")
+prgnfo="Mail.comForward v1.0 ©2002-2003 By Diego Casorran - http://Amiga.SourceForge.net"
+call nfo("Checking Inbox...")
+start:
+if ~open(nm,"tcp:"||host||"/80","RW") then do;call err("Cant connect to "host" !!!");return;end;z=0
+call writeln(nm,"GET /scripts/mail/mailbox.mail?read=yes&login="translate(login,':','@')"&folder=INBOX HTTP/1.1")
+call head(nm)
+			/*	call open(test,"ram:MFWD.debug","W")	*/
+do until eof(nm)
+ln=readln(nm)
+			/*	call writeln(test,ln)	*/
+if i=MaxToDown then LEAVE
+if pos('You are using',ln)>0 then SELECT;WHEN pos(')',word(ln,6))>0 & xpr=0 then do;call set("lm","value",100);call exceded();end;OTHERWISE if xpr=0 then call set("lm","value",replace(word(ln,6),"%",""));xpr=1;END
+if pos('<!-- --> <font size="-1" color="#000000">Showing',ln)>0 & lm2v=0 then do;vamax=left(word(ln,10),pos('<',word(ln,10))-1);if vamax>0 then call set("lm2","max",vamax);lm2v=1;if cinbox==1 then do;call nfo("You have "vamax" msgs at inbox folder.");call close(nm);return;end;end
+if pos('/templates/common/us/logout.htm',ln)>0 then call easyrequest(" -> W A R N I N G <- "'a0a'x"Received automatic logout attempt !!!"'a'x" you are unable to access your account..."'a0a'x"(Maybe this is because you are loged many"'a'x" times and Mail.com prevent for these abuses...)")
+if pos('.location.href="http://mail01.mail.com/templates/common/us/expire.htm',ln)>0 then call easyrequest(" -> W A R N I N G <- "'a0a'x"...Your login session has expired...."'a'x"(If you see this message immediately"'a'x"after logging in, and after some tryes,"'a'x"please warn the author...)")
+if pos('<td><a class="hlink" href="Javascript:readPopUpMail(',ln)>0 then do;z=1
+pos1=pos("'",ln)+1
+pos2=pos("')",ln)
+url=substr(ln,pos1,pos2-pos1)
+url=right(url,length(url)-7)
+poss=pos("/",url)-1;http=left(url,poss)
+url=right(url,length(url)-poss)
+pos1=pos('uid=',url)+3
+uid=right(url,length(url)-pos1)
+pos2=pos('&',uid)-1
+uid=left(uid,pos2)
+
+	i=i+1;call nfo('Receiving E-Mail #'i' of 'vamax'...');call set("lm2","value",i)
+		msg=""		;html=0		;stepdone=0		;headers=""
+		done=0		;w=0		;msg.w=""		;FoundAttach=0
+		attflag=0	;atthflag=0	;addatt=0		;
+				;		;			;
+	if ~open(2,"tcp:"||http||"/80","RW") then do;call err("Cant connect to "http);return;end
+	call writeln(2,"GET "url" HTTP/1.0");call head(2);
+	do until eof(2)
+	line=read(2);
+
+	SELECT
+	WHEN stepdone==1 then NOP
+	WHEN pos('<font size="-1" color="#000000">From:</font></b>',line)>0 then do
+	 line=read(2);pos1=lastpos('">',line)+2;pos2=pos("</font>",line)
+	 from=substr(line,pos1,pos2-pos1);END
+	WHEN pos('<font size="-1" color="#000000"><b>To:</b>',line)>0 then do
+	 line=read(2);pos1=lastpos('">',line)+2;pos2=pos("</font>",line)
+	 to=substr(line,pos1,pos2-pos1);END
+	WHEN pos('<font size="-1" color="#000000"><b>Subject: </b>',line)>0 then do
+	 line=read(2);pos1=lastpos('">',line)+2;pos2=pos("</font>",line)
+	 subj=substr(line,pos1,pos2-pos1);END
+	WHEN pos('<font size="-1" color="#000000"><b>Date: </b>',line)>0 then do
+	 line=read(2);pos1=lastpos('">',line)+2;pos2=pos("</font>",line)
+	 date=substr(line,pos1,pos2-pos1);stepdone=1;END
+	OTHERWISE nop
+	END
+
+if UsarHeads==1 then IF stepdone==1 & pos('<!-- -->',line)>0 then do
+	 DO FOREVER
+	  lin=read(2);if pos('</font></td>',lin)>0 | pos('</tr>',lin)>0 then LEAVE
+	   if pos('Content-Type:',lin)>0 then ITERATE
+	  lin=replace(lin,'<font size="-1" color="#000000">')
+	  lin=replace(lin,"<B>","");lin=replace(lin,"</B>")
+	  lin=replace(lin,"<BR>","");headers=headers||lin||'0a'x
+	 END;headers=headers||"X-Forward-User: "GetVar(username)
+	END
+
+	if pos('(msg_unflag_end) -->',line)>0 then do
+		do k=0 TO 3;lop=readln(2);end
+			DO FOREVER
+			 line=read(2);if pos('Content-',line)=0 then LEAVE
+			 if pos('text/html',line)>0 then html=1
+			END
+		;call joinhref()
+		if upper(left(ln,6))="<HTML>" | upper(left(ln,7))="<XHTML>" then html=1
+		msg.w=msg.w||line||'a'x
+
+	 do until eof(2)
+	 line=read(2);if pos('Content-Transfer-Encoding:',line)>0 then line=read(2)
+		     ;call joinhref()
+		     ;if pos('Content-Type:',line)>0 then SELECT
+						WHEN pos('text/',line)>0 then addatt=1
+						OTHERWISE addatt=0	;END
+SELECT
+	WHEN pos('name="moveMessage2">',line)>0 then leave
+	WHEN word(line,1)="<B>Content-Disposition:</B>" | word(line,1)="<B>Content-Type:</B>" then if attflag=0 then do
+	 	if atthflag=0 then do
+	 		boundary="CalAnDRAka."||time('s')
+			headers=headers||"0a"x||'Content-Type: multipart/mixed; boundary="'boundary'"'
+			atthflag=1
+		end
+		line="--"boundary||"0a"x||line
+		attflag=1
+	END
+
+	WHEN pos('/getattach/',line)>0 then do
+	 	pos1=pos('="',line)+2;pos2=lastpos('" ',line)
+	 	atturl=substr(line,pos1,pos2-pos1)
+	 	atturl=right(atturl,length(atturl)-7)
+	 	atturl=right(atturl,length(atturl)-(pos('/',atturl)-1))
+	 	filename=substr(atturl,12,pos('?',atturl)-12)
+	 	if pos(filename,filez)>0 then af3=af3+1
+	 	else filez=filez||filename
+	 	if addatt==1 THEN DO;af1=af1+1
+		 call nfo("Receiving Attach...")
+		 temp=CreateTempFile()
+		 call RecvAtt(temp)
+		  if FoundAttach==1 then do
+			call open(tmp,temp,"R")
+			call nfo("Adding attach ("temp") to the email, please wait......")
+			do until eof(tmp)
+			 img=readln(tmp);if length(msg.w)>65000 then do;w=w+1;msg.w="";end
+			 msg.w=msg.w||img||'0a'x
+			end;call close(tmp)
+		  end;attflag=0;addatt=0
+		END;else do;attdl=0
+			IF UsarReq==0 then pet=muirequest("app","","Download attach...","Yes|No",parsetext("\nE-Mail from: "from"\n%i with subject: "subj"\n\n%n%chas attached the following encoded file:\n\n%b"filename"\n\n%n Download ?"))
+				else pet=1
+			if pet==1 then do;af1=af1+1
+				call nfo("Receiving "filename"...")
+				ToDir=xget("attdst","contents")
+				call RecvAtt(ToDir||filename)
+				attdl=1
+			end;else af2=af2+1
+		    END
+	  call nfo('Receiving E-Mail #'i'...')
+	  if attdl==1 then line="[PKG] This file was already downloaded to your hd..."'a'x"       uSinG  Mail.comForward! [/PKG]"
+	  	else line="[PKG] This file was rejected..."'a'x"       uSinG  Mail.comForward! [/PKG]"
+	   if UsarHeads=0 then line="-- attachment; filename="filename||'a0a'x||line
+	END
+OTHERWISE nop
+	END
+
+	 if length(msg.w)>65000 then do;w=w+1;msg.w="";end
+	 msg.w=msg.w||line||'0a'x;END;done=1;END
+	if done==1 then leave
+	end;call close(2)
+
+	  if upper(left(msg.0,6))="<HTML>" | upper(left(msg.0,7))="<XHTML>" then html=1
+	  if atthflag==1 then do
+		msg.w=msg.w||'a'x||"--"boundary"--"||'a0a'x
+		msg.0="--"boundary||'a'x||msg.0
+	  end
+
+
+IF html=0 THEN DO
+	call nfo('Converting HTML to TXT, please wait....')
+	DO p=0 TO w
+	 msg.p=replace(msg.p,"<br>","0a"x)
+	 msg.p=replace(msg.p,"<BR>")
+	 msg.p=replace(msg.p,"<PRE>")
+	 msg.p=replace(msg.p,"</PRE>")
+	 msg.p=replace(msg.p,"<B>")
+	 msg.p=replace(msg.p,"</B>")
+	 msg.p=replace(msg.p,"<b>")
+	 msg.p=replace(msg.p,"</b>")
+	 msg.p=replace(msg.p,"<HR SIZE=1>","-- ")
+	 msg.p=replace(msg.p,"<hr size=1>","-- ")
+	 msg.p=replace(msg.p,"<strong>")
+	 msg.p=replace(msg.p,"</strong>")
+	 msg.p=replace(msg.p,"<p>","d0a"x)
+	 msg.p=replace(msg.p,"</form>")
+/*	 msg.p=replace(msg.p,"","")
+	 msg.p=replace(msg.p,"","")*/
+	 msg.p=nohref(msg.p)		;/* DO NOT MODIFY ORDER BELOW !!! */
+	 msg.p=replace(msg.p,'target="_blank">',"")
+	 msg.p=replace(msg.p,"<FONT")
+	 msg.p=replace(msg.p,"</FONT>")
+	 msg.p=replace(msg.p,'COLOR="BLUE">')
+	END
+END
+
+/************/
+SELECT
+WHEN ToFW==1 then do
+	call nfo('Forwarding E-Mail #'i' (From: 'replace(word(from,1),'"','')')...')
+	if ~open(snd,"TCP:"||smtp||"/25","RW") then do;call err("Cant connect to "smtp"!!!");return;end
+	xxx=readln(snd)
+	if word(xxx,1)~=220 then do;call err("ERROR from "smtp": "xxx);return;end
+	call writeln(snd,"HELO "smtp);xxx=readln(snd)
+	if word(xxx,1)~=250 then do;call err("ERROR from "smtp": "xxx);return;end
+	call writeln(snd,"MAIL FROM: "login);xxx=readln(snd)
+	if word(xxx,1)~=250 then do;call err("ERROR from "smtp": "xxx);return;end
+	call writeln(snd,"RCPT TO: "faddr);xxx=readln(snd)
+	if word(xxx,1)~=250 then do;call err("ERROR from "smtp": "xxx);return;end
+	call writeln(snd,"DATA");xxx=readln(snd)
+	if word(xxx,1)~=354 then do;call err("ERROR from "smtp": "xxx);return;end
+END
+WHEN ToNIX==1 then do
+	call nfo('Pasting E-Mail #'i' (From: 'replace(word(from,1),'"','')')...')
+	Select
+	 WHEN exists(unixf) then if ~open(snd,unixf,"A") then do;call err("Cant open "unixf" for append!!!");return;end
+	 OTHERWISE if ~open(snd,unixf,"W") then do;call err("Cant open "unixf" for write!!!");return;end
+	END
+	call writeln(snd,"From "replace(replace(word(from,words(from)),'<',''),'>','')" "date)
+END
+WHEN ToYAM==1 then do
+if ~show('p','YAM') then do;call err("AAAARGH!!!!!  L O A D  T H E  Y A M  A G A I N !!!!!");return;end
+	call nfo('Exporting to YAM, E-Mail #'i' (From: 'replace(word(from,1),'"','')')...')
+OPTIONS RESULTS
+address YAM
+'FolderInfo';fol=word(result,2)
+'NEWMAILFILE 'fol;YAMFile=result
+	if ~open(snd,YAMFile,"W") then do;call err("Cant open "YAMFile"!!!¿?!!!");return;end
+END
+OTHERWISE call err("erm.. mmm... this seems a internal serious error!..");return
+END
+	if UsarHeads==1 then do;call writeln(snd,headers)
+				call writeln(snd,"X-Forward-Tool: "prgnfo);END
+	else call writeln(snd,"X-Mailer: "prgnfo)
+	call writeln(snd,"X-Forward-Date: "date()" "time())
+	call writeln(snd,"From: "from)
+	call writeln(snd,"To: "to)
+	call writeln(snd,"Date: "date)
+	call writeln(snd,"Subject: "subj)
+if ToFW==1 then	call writeln(snd,'X-WARNING: Are NOT responsable the persons at "From" and "To" fields if you receive this message by error, this E-Mail was forwarded from the account: 'login)
+	if html=1 then call writeln(snd,"Content-Type: text/html")
+	call writeln(snd,"")
+	DO p=0 TO w
+	 call writeln(snd,msg.p)
+	END
+if ToFW==1 then do
+	call writeln(snd,".");xxx=readln(snd)
+	if word(xxx,1)~=250 then do;call err("ERROR from "smtp": "xxx);return;end
+	call writeln(snd,"QUIT")
+	xxx=readln(snd)
+END
+	call CLOSE(snd)
+
+	call nfo('Deleting E-Mail #'i' ('uid')...')
+	todel="/scripts/mail/Outblaze.mail?fwdopt=attach&folder_name=Trash&login="||translate(login,':','@')||"&sel_"||uid||"=ON&current_folder=INBOX&order=Newest&ispopupmultiple=0&move_read=&delete_read=yes"
+	 len=length(todel)
+	if ~open(2,"tcp:"||http||"/80","RW") then do;call err("Cant connect to mymail.mail.com!!");return;end
+	call writeln(2,"POST /scripts/mail/Outblaze.mail HTTP/1.0")
+	call writeln(2,"User-Agent: Mozilla/4.0 (compatible; MSIE 5.0; Win98)")
+	call writeln(2,"Host: "http)
+	call writeln(2,"Content-Type: application/x-www-form-urlencoded")
+	call writeln(2,"Content-Length: "len)
+	call writeln(2,"Cookie: "cookie)
+	call writeln(2,"")
+	call writeln(2,todel)
+	call writeln(2,"d0a"x)
+	xxx=readln(2)
+	call close(2)
+/********************************/
+end
+end
+call close(nm)
+if z=1 & i~=MaxToDown then call start()
+ntime=time('s')
+if i>0 then do;call nfo(i' E-Mails succesfully forwarded.');call finalinfo();end
+else call nfo('No new E-Mails found.')
+if ToYAM==1 then address YAM 'MAILUPDATE'
+call set("lm2","max",100)
+call set("lm2","value",0)
+RETURN
+
+finalinfo:;if cvbn=1 then return
+UTime=ntime-ctime;SELECT
+when utime>60 & utime<3600 then utime=utime/60" min."
+when utime>3600 then utime=(utime/60)/60" Hours"
+otherwise utime=utime" secs";END
+if pos('.',word(utime,1))>0 then utime=left(word(utime,1),pos('.',utime)-1)" "word(utime,2)
+if muirequest("app","",login" Info","Savelog|Close",parsetext("%c%b\n
+E-Mails info:\n%n
+"i" Received.\n
+"vamax-i" on the server.\n\n%c%b
+Attacheds info:\n%n
+"af1" Received.\n
+"af2" Rejected.\n
+"af3" Duplicates.\n\n
+\n%b%cTime Used: %n"utime"\n
+\n"))=1 then do
+	logf="s:!mfwd.log"
+	if exists(logf) then call open(log,logf,"A")
+		else call open(log,logf,"W")
+	call writeln(log,date()" "time()" > Received ("i"/"vamax") EMails from "login", with ("af1"/"af1+af2") attacheds.")
+	call close(log)
+	return
+end;cvbn=1
+RETURN
+
+head:
+call writeln(arg(1),"User-Agent: Mozilla/4.0 (compatible; MSIE 5.0; Win98)")
+call writeln(arg(1),"Referer: http://"||host||"/scripts/common/outblaze.main?show_frameindex=now&login="||translate(login,':','@'))
+call writeln(arg(1),"Host: "host)
+call writeln(arg(1),"Cookie: "cookie)
+call writeln(arg(1),"d0a"x)
+RETURN
+
+read: procedure
+parse arg md
+line=readln(md)
+line=replace(line,"&quot;",'"')
+line=replace(line,"&#34;",'"')
+line=replace(line,"&lt;","<")
+line=replace(line,"&gt;",">")
+RETURN line
+
+REPLACE: procedure
+parse arg src, old, new
+if pos(old, src)>0 then do
+   parse var src left(old)right
+   return left||new||replace(right, old, new)
+end
+RETURN src
+
+nohref: procedure
+parse arg line
+	 if pos('<A HREF=',upper(line))>0 & pos('</A>',upper(line))>0 then do
+	  posa=pos('<A HREF=',upper(line));posb=pos('</A>',upper(line))+4;
+	  if posa>posb then do;oldline=line;line=right(line,length(line)-posb);posb=pos('</A>',upper(line))+4;end
+		if posa>posb then return oldline
+		  else old=substr(line,posa,posb-posa)
+	  pos1=lastpos('">',old)+2;if pos1=2 then pos1=lastpos('" >',old)+3
+	  pos2=pos('</',old);if pos1>pos2 then pos2=lastpos('</',old)
+		new=substr(old,pos1,pos2-pos1)
+	  line=replace(line,old,new)
+	  line=nohref(line)
+	 END
+RETURN line
+
+joinhref:
+     ;if pos('<A',upper(line))>0 & pos('HREF=',upper(line))=0 then line=line" "read(2)
+     ;if pos('<A HREF=',upper(line))>0 & pos('</A>',upper(line))=0 then line=line||read(2)
+RETURN
+
+RecvAtt:
+		 if open(3,"tcp:"||http||"/80","RW") then do
+		  call writeln(3,"GET "atturl" HTTP/1.0");
+		  call writeln(3,"Host: "http)
+		  call writeln(3,"Cookie: "cookie)
+		  call writeln(3,"Referer: http://"||http||url||'0a'x)
+		  xds=readln(3)
+		  if word(xds,2)=200 then do
+		   if ~open(tmp,arg(1),"W") then do;call err("Unable to open "arg(1)" for write!");return;end
+			actu=0
+		   do forever;zu=readln(3);parse var zu zu"0d"x
+		   IF LEFT(zu,16)="Content-Length: " THEN total=delstr(z,1,16)
+		   if zu="" then leave;end;if total="TOTAL" then total="?"
+		   do until eof(3);actu=actu+WRITECH(tmp,READCH(3,1024))
+		    call nfo("Receiving Attach... ( "actu" / "total" )");end
+		   ;call close(tmp);FoundAttach=1
+		  END;else call err("Error returned geting attach: "xds);call close(3)
+		 END;else call err("Cant connect for receive the attach !!!!")
+		call SetComment(arg(1),from)
+RETURN
+
+singin:
+call nfo("Loging in....");lused=login;cookie=""
+str="action=login&show_frame=Enter&mail_language=us&login="login"&password="pass"&x=150&y=9"
+len=length(str)
+
+if ~open(1,"tcp:www.mail.com/80","RW") then do;call err("Cant connect to www.mail.com!");return 1;end
+call writeln(1,"POST /scripts/common/proxy.main HTTP/1.0")
+call writeln(1,"Referer: http://www.mail.com/")
+call writeln(1,"Host: www.mail.com")
+call writeln(1,"Content-type: application/x-www-form-urlencoded")
+call writeln(1,"Content-length: "len)
+call writeln(1,"")
+call writeln(1,str)
+call writeln(1,"a0d"x)
+recv=readln(1);if word(recv,2)~=302 then do;call err("        Invalid username/password !"'0a'x"(if you believe this is an error please warn the author)");return 1;end
+do forever;recv=readln(1);parse var recv recv"0d"x
+if pos('Set-Cookie:',recv)>0 then cookie=cookie" "word(recv,2)
+if word(recv,1)="Location:" then LEAVE;END;call close(1)
+nurl=word(recv,2);nurl=right(nurl,length(nurl)-7)
+pos=pos('/',nurl)-1
+nhost=left(nurl,pos);nurl=right(nurl,length(nurl)-pos)
+
+call nfo("Entering....")
+if ~open(2,"tcp:"||nhost||"/80","RW") then do;call err("Cant connect to "nhost);return 1;end
+call writeln(2,"GET "nurl" HTTP/1.0")
+call writeln(2,"Referer: http://www.mail.com/")
+call writeln(2,"Host: "nhost)
+call writeln(2,"Connection: Keep-Alive")
+call writeln(2,"Cookie: "cookie)
+call writeln(2,"")
+recv=readln(2);if word(recv,2)~=200 then do;call err("ERROR, maybe the syntax from Mail.com has changed, please warn the author");return 1;end
+do forever;recv=readln(2);parse var recv recv"0d"x
+if word(recv,1)="Set-Cookie:" then cookie=cookie" "word(recv,2)
+if recv="" then LEAVE;END
+/*cookie=word(recv,2)*/;call close(2)
+/*if pos('INAME.COM',upper(login))>0 then do;cookie="iname_com_bunjee=; iname_com_beanie=; "cookie;end;host="mail02.mail.com";end
+else do;do s=0 to c-1;cookie.s=cookie.s" mail_com_bunjee=;";end;host="mymail.mail.com";end*/
+if pos('INAME.COM',upper(login))>0 then host="mail02.mail.com"
+	else host="mymail.mail.com"
+RETURN 0
+
+emptyt:
+login=xget("usr","contents");pass=xget("pwd","contents")
+if login="" | pass="" then do;call err("must insert a valid mail.com address and password!");return;end
+if cookie="COOKIE" | login~=lused then if singin()>0 then return
+call nfo("Cleaning Trash folder...")
+ToDel="login="||translate(login,':','@')||"&current_folder=Trash&folder_name=&move_selected=&delete_selected=&match=&matchfield=&matchtext=&emptytrash=yes"
+len=length(todel)
+	if ~open(2,"tcp:"||host||"/80","RW") then do;call err("Cant connect to mail01.mail.com!!");return;end
+	call writeln(2,"POST /scripts/mail/Outblaze.mail HTTP/1.0")
+	call writeln(2,"User-Agent: Mozilla/4.0 (compatible; MSIE 5.0; Win98)")
+	call writeln(2,"Host: "||host)
+	call writeln(2,"Content-Type: application/x-www-form-urlencoded")
+	call writeln(2,"Content-Length: "len)
+	call writeln(2,"Cookie: "cookie)
+	call writeln(2,"")
+	call writeln(2,todel)
+	call writeln(2,"d0a"x)
+	xxx=readln(2)
+	call close(2)
+call nfo("Trashcan empty.")
+RETURN
+
+cquota:
+login=xget("usr","contents");pass=xget("pwd","contents")
+if login="" | pass="" then do;call err("must insert a valid mail.com address and password!");return;end
+if cookie="COOKIE" | login~=lused then if singin()>0 then return
+me=translate(login,':','@')
+call nfo("Checking quota...")
+	if ~open(2,"tcp:"||host||"/80","RW") then do;call err("Cant connect to mail01.mail.com!!");return;end
+	call writeln(2,"GET /scripts/common/frontpage.main?showadvert=yes&login="||me" HTTP/1.0")
+	call writeln(2,"User-Agent: Mozilla/4.0 (compatible; MSIE 5.0; Win98)")
+	call writeln(2,"Referer: http://"||host||"/scripts/common/outblaze.main?welcome=here&login="||me||"&language=us&navleft=")
+	call writeln(2,"Host: "||host)
+	call writeln(2,"Cookie: "cookie)
+	call writeln(2,"")
+do forever;recv=readln(2);if eof(2) then return
+if pos('You are using',recv)>0 then LEAVE;END
+quot=word(recv,6);
+if pos('(',quot)>0 then do
+	call set("lm","value",100)
+	call exceded()
+	call nfo("Your mail quota is exceeded, please empty your trash")
+END;ELSE DO
+quot=left(quot,length(quot)-1)
+call set("lm","value",quot);quot=quot"\%"
+call nfo("You are using "quot" of your mail quota.")
+END;call close(2);
+RETURN
+
+exceded:
+/*call easyrequest(" -> W A R N I N G <- "'a0a'x"Your mail quota is exceeded, please empty your trash!")*/
+RETURN
+
+GetLogo:
+call DecodeB64("
+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
+AfAA7wDvAO8AAA==",res,string var)
+return res
+
+GetGo:
+call DecodeB64("
+Rk9STQAAAyhJTEJNQk1IRAAAABQAIAATAIkAFAYCAYAAPSwsAUAAyENNQVAAAADAADBgM2aZAAAA
+EE9vT3+PNGicT3BvYJifL2d/X4+PCxQa//v/ESAgIFdwUIeAla/KADhgD0BvZ42zP3eAPl9dME9O
+HzAwTXmmAAgA8vX4DhgeT3h/DxAQL15/NmugpbzS5ezyucvcGTFJCA8WKVN8LkNBXZGLESIzUH54
+BgsNMWGSID5dQHCfQ2lkgKC/IkVnzNnlWYOsL12MIzc0JktyHi8tEB4mVIR+WYyF0uznYJePAAAA
+AAAAAAAAAAAAAAAAR1JBQgAAAAQAEAAJQ0FNRwAAAAQAAhAARFBJIAAAAAQALAAsQk9EWQAAAhP9
+//0A/f/9//3//f8D/4AA/wMA//+AA/4AAH8D/3//fwP+AAB/A/+AAP8D/3//PwMDgABgA/t//p8D
+/YAAHwP4AAAfA/+AAP8D9ef33wMOGBwQA/EAFP8D/gAADwPwGBwPA/YAAD8D5738zwMQWjw4A+6C
+IS8D8D49NwPoZCInA+gCAx8D3//v5wMQm2oUA+SZSBsD8H5qEwPA/QATA9AAFQ8D1/q/+wMoBwOE
+A/gBBosD2EMjAwP4ZCKDA+ChYAcD33//eQMgAuOCA4gCoo0DwABhgwOAAoIFA+DAAIUDr/Ff+QNw
+z+GGA5BBAIED8MBBhwOQD6ABA6AAAAUDr/9f/QNwz+GCA7BBAIED8M9BgwOQAKADA6AAAAED73//
+eQNwD+GGA5AdoIEDsA9hgwOQAIIHA+DAAoUD3/uP+wMgwwGAA4iFEI8DwMcRAwOAoACHA+AkcgcD
+x//r+wMom2oEA/iZSAsDyH9qAwPo/AQDA/AAFQcDz7/85wMQWjwUA+wCIRsD4D49EwPAZCITA9AA
+Aw8D7+fnz/8YAQw4A+4AFC8D+AAQJwPgGAw3A+gAEB8D9f//3wMOAAAQA/EAAP8D/gAADwPwAAAP
+A/YAAD8D/3//PwMDgABgA/t//p8D/QAAHwP4gAAfA/+AAP8D/gAAfwMB//8AA/4AAP/9/wP/A4F/
+A/4AAH/9//0A/f/9//3//f8A",ress,string var)
+return ress
+
+halt:
+break_c:
+    exit
+

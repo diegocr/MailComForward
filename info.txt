@@ -1,0 +1,48 @@
+0.1	first release (just work ;)
+
+0.2	added "address book"
+	fixed bug when login was incorrect
+
+0.3	now work with iname.com accounts too
+	added option 'check quota'
+	some optimizacions...
+
+0.4	Added checkpoint for large emails
+	Now can receive the attacheds
+	Full headers option added
+	AutoDL (for attachs) options added
+	Rewrited the strings recognition proccess
+	many optimizacions...
+
+HOW WORK:
+
+Mail.comForward  work as a browser, with a little diference...  it login in
+every time you press the 'Go' button, this is for avoid the autologout sent
+by Mail.com when the cookie change...
+
+The  process  is  very  simple...   when  you press 'Go' MFWD login to your
+account,  open  your Inbox folder, check for an email and if one found open
+another  connection  for download the mail, then connect to the smtp server
+and  forward  it  to  your  forward email address, when this is done, other
+connection  is  open  for  move the mail to the TRASH folder, then continue
+checking for new mail...
+
+More simplified:
+
+1.- Connect/login
+2.- Open Inbox/Check
+3.- Receive email
+4.- Forward email
+5.- Delete email
+6.- jump to step 2 while new mail found
+7.- Thats all! :)
+
+
+TIPS:
+
+Go to your mail.com preferences account, and do:
+
+"Mail header display" to 'show basic' (In newer version I try to include all headers)
+"..Messages per page" to a highter number, f.ex. 100
+
+doing this you gain a considerable speed...

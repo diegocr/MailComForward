@@ -1,0 +1,87 @@
+                                                                          ´,¯`-`
+                                                                          ,´,,,,
+                                                                          ­¯`´­´
+       ´­´-`´'­,'`','­',-´´`´´´¯­'¯´,­'-                                  ''--´­
+       ´´,-'­´`­'-',`´'­´,`-,­ÑÑ+ÙÑÑ­`­`                                  `,,'-¯
+       '''`¯­`-'­,-­'-¯-,­`'',ÑÑÚ6ÑÑ¯­,-                                  ¯'­-`´
+       ­-­----´­'-`,,¯,¯,´¯¯­­wè-äÑÑ'­,                                   ´'­­¯-
+       ¯--¯--,'­¯`'´´¯´,´`­´´`¯''EÑÑ`¯´                                   ¯'`¯,'
+        ,`ÑÑ)@Ñ@`)ÑÑ|,`\ÑÑÑÙ­¯ÑÑ|õÑÑ´­'XSÁÅ.  ÔÁÅÁ  ÿbê¨VVµ ½êX|          ¯--''-
+        ­`ÑÑÑÑÑÑÙÑÑÑÑ`¯ÑÑÑÑÑc'ÑÑ³ÈÑÑ¯-4Ôµ·Äý ¼â:½ðm óÁâX4dÁ/êþÀÊ          '`¯''¯
+        ¯`ÑÑ¯-@Ñ0',ÑÑ,'Ë,­ÒÑÑ'ÑÑ/àÑÑ¯õþ:  " ¨ðñ  òÊ\oÄ4  dV5 )XÄ          '­,´`­
+        '­ÑÑ¯,9ÑÓ'´ÑÑ,`¯'kÑÑÑ¯ÑÑ³%ÑÑ,ÁX     5Ô+  cÊÁyÀV  Àâ« ·Sb          '­¯-`¯
+        `-ÑÑ',áÑ9--ÑÑ´¯)0@@ÑÑ-ÑÑîäÑÑ­bd     ÔÄc  )ÔÀ«VÄ  ÔXe  Êð          ,­,-­`
+         ¯ÑÑ´´ÞÑP´,ÑÑ-èÑè´§ÑÑ-ÑÑckå¯'´Ô     XÅ)  (þµaVð  ÅÀy  ðX          ''-','
+         `ÑÑ`,áÑë­­ÑÑ´õÑ/`ÛÑÑ´ÑÑ|Þ\-`¯§.    òÄ(  ÎXaoÔþ  ÔÔy  ÊÊ          -`'`¯'
+         ¯ÑÑ´´9Ñà­'ÑÑ'%Ñë­@ÑÑ,ÑÑî9Ù,´´¼hÎ :" 44 /êÊ ÿÄÄ  êþ«  ÄÀ          ¯-,`,`
+         ­Þ0¯'áÛë´´@É,´0Ñà´@Ñ`ÈEîÞÚÙ, ¸hbÁ±   5Êêñ  y¼m  ñÿa  ¼ó          `´´­-,
+         ­-­''­¯-¯,­-¯­'î,'´`',``´'­¯    ·     .  F O R W A R D           ­`'´`'
+         '´'´,,´¯-¯`,,`'-'¯­­`                                            ¯`´'¯`
+         ­´¯­'¯'´¯­-                                                      ,`´´`-
+                                                                          ´¯,'`,
+                                                                          ´´',´,
+                                                                          ¯'´,'¯
+INTRODUCTION:                                                               ,
+                                                                           ,
+I  write  this program because now Mail.com services avoid forward messages
+for  the  free  account  owners.   as I have many accounts, I had to decide
+between   two  options...   if  pay  for  the  premium  service,  or  visit
+continuously  the  mail.com website to see if have new mail......  but hey!
+if  I can do  this program for  continue receiving my messages with Yam and
+avoid sufferings to me!...  :-)
+
+
+HOW IT WORK: 
+
+The  process  is  very  simple...   when  you press 'Go' MFWD login to your
+account,  open  your Inbox folder, check for an email and if it  found open
+another  connection  for download the mail, then connect to the smtp server
+and  forward  it  to  your  forward email address, when this is done, other
+connection  is  open  for  move the mail to the TRASH folder, then continue
+checking for new mail...
+
+
+TIPS:
+
+Go to your mail.com preferences account, and do:
+
+"Mail header display" to 'show all' (if you want use the Headers option)
+"..Messages per page" to a highter number, f.ex. 100
+(doing this you avoid some connection proccess)
+
+
+NOTES:
+
+Mail.comForward  is now MailWare...  this meant if you use it, (and would I
+continue   the   developend),   let   me   know  sending  me  an  email  to
+<dcr8520@amiga.org> (or dcr8520@mail.com ;)
+
+For more info see the files:  CHANGES, BUGS, etc
+
+Thats all, thx to read this :-)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,22 @@
+
+0.5	Rewrited AGAIN the strings recognition proccess
+	Added warnings for quota exceded and others,,
+	Added functions 'check Inbox' & 'check log'
+	Now the emails are exported or forwarded
+	Optimized the HTML to TXT process
+
+0.4	Rewrited the strings recognition proccess
+	Added checkpoint for large emails
+	Now can receive the attacheds
+	Full headers option added
+	AutoDL (for attachs) options added
+	many optimizations...
+
+0.3	now work with iname.com accounts too
+	added 'check quota' & 'empty thash' functions
+	some optimizacions...
+
+0.2	added "address book"
+	fixed bug when login was incorrect
+
+0.1	first release (just work ;)
